@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns="http://www.springframework.org/schema/beans"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd">
+
+	<bean id="myRealm"
+		class="owl.my.firend.bussiness.security.session.CustomRealm">
+		<!-- <property name="authenticationCachingEnabled" value="false" /> -->
+		<property name="credentialsMatcher">
+			<ref bean="sha256Matcher" />
+		</property>
+	</bean>
+
+	<bean id="securityManager"
+		class="org.apache.shiro.web.mgt.DefaultWebSecurityManager">
+		<property name="realm" ref="myRealm" />
+		<property name="sessionManager" ref="sessionManager" />
+		<property name="cacheManager" ref="cacheManager" />
+	</bean>
+
+	<bean id="lifecycleBeanPostProcessor"
+		class="org.apache.shiro.spring.LifecycleBeanPostProcessor" />
+
+	<bean id="cacheManager"
+		class="org.apache.shiro.cache.ehcache.EhCacheManager">
+		<property name="cacheManager" ref="ehCacheManager" />
+	</bean>
+
+	<bean id="sha256Matcher"
+		class="org.apache.shiro.authc.credential.Sha256CredentialsMatcher">
+		<!-- <property name="hashAlgorithmName" value="md5" /> -->
+		<property name="hashSalted" value="true" />
+		<property name="storedCredentialsHexEncoded" value="false" />
+		<property name="hashIterations" value="1024" />
+	</bean>
+
+	<bean id="ehCacheManager"
+		class="org.springframework.cache.ehcache.EhCacheManagerFactoryBean" />
+
+	<bean id="cacheSessionDAO"
+		class="org.apache.shiro.session.mgt.eis.EnterpriseCacheSessionDAO" />
+
+	<bean id="sessionManager"
+		class="org.apache.shiro.web.session.mgt.DefaultWebSessionManager">
+		<property name="sessionDAO" ref="cacheSessionDAO" />
+	</bean>
+
+	<bean id="shiroFilter"
+		class="org.apache.shiro.spring.web.ShiroFilterFactoryBean">
+		<property name="securityManager" ref="securityManager" />
+		<property name="loginUrl" value="/login" />
+		<property name="successUrl" value="/index" />
+		<property name="unauthorizedUrl" value="/403" />
+		<!-- <property name="filterChainDefinitions"> -->
+		<!-- <value> -->
+		<!-- # some example chain definitions: -->
+		<!-- /admin/** = authc, roles[ROLE_SUPER_ADMIN] -->
+		<!-- /docs/** = authc, perms[document:read] -->
+		<!-- # more URL-to-FilterChain definitions here -->
+		<!-- </value> -->
+		<!-- </property> -->
+	</bean>
+
+	<!-- Enable Shiro Annotations for Spring-configured beans. Only run after 
+		the lifecycleBeanProcessor has run: -->
+	<bean
+		class="org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator"
+		depends-on="lifecycleBeanPostProcessor">
+		<property name="proxyTargetClass" value="true" />
+	</bean>
+
+	<bean
+		class="org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor">
+		<property name="securityManager" ref="securityManager" />
+	</bean>
+
+	<!-- <bean id="jwtg" class="owl.my.firend.bussiness.security.token.JWTGuard" 
+		/> <bean id="jwtv" class="owl.my.firend.bussiness.security.token.JWTVerifyingFilter" 
+		/> -->
+</beans>
